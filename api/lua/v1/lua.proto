@@ -1,0 +1,202 @@
+syntax = "proto3";
+
+package hephaestus.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/empty.proto";
+import "openapi/v3/annotations.proto";
+import "validate/validate.proto";
+import "errors/errors.proto";
+
+option go_package = "hephaestus/api/lua/v1;hephaestus";
+option java_multiple_files = true;
+option java_package = "dev.hephaestus.api";
+option objc_class_prefix = "Hephaestus";
+
+option (openapi.v3.document) = {
+  info: {
+    title: "Hephaestus"
+    description: "A powerful distributed Lua scripting middleware."
+    version: "1.1.0"
+  }
+};
+
+enum ErrorReason {
+  option (errors.default_code) = 200;
+  UNKNOWN = 0 [(errors.code) = 500];
+  SCRIPT_NOT_FOUND = 1 [(errors.code) = 404];
+  INVALID_PARAM = 2 [(errors.code) = 400];
+  CONTEXT_TIMEOUT = 3 [(errors.code) = 408];
+  COMPILATION_ERROR = 4 [(errors.code) = 400];
+}
+
+service Hephaestus {
+  rpc RunScriptOnce(RunScriptOnceRequest) returns (ScriptReturnedValues) {
+    option (google.api.http) = {
+      post: "/script/run"
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "Run a single script only once"
+    };
+  }
+  rpc AddScript(ScriptContent) returns (ScriptIdentifier) {
+    option (google.api.http) = {
+      post: "/script"
+      body: "*"
+    };
+    option (openapi.v3.operation) = {
+      summary: "Add a brand new script to the system"
+    };
+  }
+  rpc UpdateScript(UpdateScriptRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/script/{id}"
+      body: "*"
+    };
+    option (google.api.method_signature) = "id";
+    option (openapi.v3.operation) = {
+      summary: "Update the script with the given identifier"
+    };
+  }
+  rpc DeleteScript(ScriptIdentifier) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/script/{id}"
+    };
+    option (openapi.v3.operation) = {
+      summary: "Remove the specified script from the system"
+    };
+  }
+  rpc ExecuteScript(ExecuteScriptRequest) returns (ScriptReturnedValues) {
+    option (google.api.http) = {
+      get: "/script/{id}"
+    };
+    option (google.api.method_signature) = "id";
+    option (openapi.v3.operation) = {
+      summary: "Execute the specified script"
+    };
+  }
+  rpc FindScript(FindScriptRequest) returns (ScriptIdentifiersResponse) {
+    option (google.api.http) = {
+      get: "/script"
+    };
+    option (openapi.v3.operation) = {
+      summary: "Find script identifiers with the given prefix"
+    };
+  }
+}
+
+message ScriptIdentifier {
+  string id = 1 [
+    (openapi.v3.property) = {
+      description: "The unique identifier for each script",
+      max_length: 32,
+      min_length: 1,
+      pattern: "^[a-f0-9]{1,32}$"
+    },
+    (validate.rules).string = {
+      min_len: 1,
+      max_len: 32,
+      pattern: "^[a-f0-9]{1,32}$"
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message ScriptContent {
+  string script = 1 [
+    (openapi.v3.property) = {
+      description: "Lua script source code string"
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message UpdateScriptRequest {
+  string id = 1 [
+    (openapi.v3.property) = {
+      description: "The unique identifier for each script",
+      max_length: 32,
+      min_length: 1,
+      pattern: "^[a-f0-9]{1,32}$"
+    },
+    (validate.rules).string = {
+      min_len: 1,
+      max_len: 32,
+      pattern: "^[a-f0-9]{1,32}$"
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+  string script = 2 [
+    (openapi.v3.property) = {
+      description: "Lua script source code string"
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+}
+
+message ExecuteScriptRequest {
+  string id = 1 [
+    (openapi.v3.property) = {
+      description: "The unique identifier for each script",
+      max_length: 32,
+      min_length: 1,
+      pattern: "^[a-f0-9]{1,32}$"
+    },
+    (validate.rules).string = {
+      min_len: 1,
+      max_len: 32,
+      pattern: "^[a-f0-9]{1,32}$"
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+  repeated google.protobuf.Any args = 2 [
+    (openapi.v3.property) = {
+      description: "Arguments passed to the script"
+    },
+    (google.api.field_behavior) = OPTIONAL
+  ];
+}
+
+message ScriptReturnedValues {
+  repeated google.protobuf.Any args = 1 [
+    (openapi.v3.property) = {
+      description: "Script returned values"
+    },
+    (google.api.field_behavior) = OPTIONAL
+  ];
+}
+
+message RunScriptOnceRequest {
+  string script = 1;
+  repeated google.protobuf.Any args = 2;
+}
+
+message FindScriptRequest {
+  optional string prefix = 1 [
+    (openapi.v3.property) = {
+      description: "Script identifier prefix used to search the matched scripts",
+      max_length: 32,
+      min_length: 1,
+      pattern: "^[a-f0-9]{1,32}$"
+    },
+    (validate.rules).string = {
+      min_len: 1,
+      max_len: 32,
+      pattern: "^[a-f0-9]{1,32}$"
+    },
+    (google.api.field_behavior) = REQUIRED
+  ];
+  optional uint32 limit = 2;
+}
+
+message ScriptIdentifiersResponse {
+  repeated string id = 1 [
+    (openapi.v3.property) = {
+      description: "Matched script identifiers",
+    }
+  ];
+}

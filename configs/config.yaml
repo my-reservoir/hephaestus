@@ -1,0 +1,25 @@
+registry:
+  endpoints:
+    - 127.0.0.1:2379
+  username:
+  password:
+  auto_sync_interval:
+  dial_timeout:
+  dial_keep_alive_timeout:
+server:
+  http: # HTTP server, intended for front end requests
+    addr: 0.0.0.0:2512
+    timeout: 1s
+  grpc: # GRPC server, intended for intro-service communication
+    addr: 0.0.0.0:3512
+    timeout: 1s
+telemetry:
+  metrics:
+    enabled: true
+    endpoint: 127.0.0.1
+  traces:
+    enabled: true
+    endpoint: http://127.0.0.1:14268/api/traces
+  log:
+    driver: file
+    addr: /dev/null
